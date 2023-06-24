@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium.wrappers import FlattenObservation
 
-import easy_poe.gym.env.crafting_bench
+import easy_poe.gym.environment.crafting_bench
 
 
 from easy_poe.poe.modifier import Modifier

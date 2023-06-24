@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import easy_poe.gym.env.crafting_bench
+import easy_poe.gym.environment.crafting_bench
 
 from collections import namedtuple, deque
 from itertools import count

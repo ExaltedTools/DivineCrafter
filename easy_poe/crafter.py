@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 import torch
 import torch.nn.functional as F
-import easy_poe.gym.env.crafting_bench
+import easy_poe.gym.environment.crafting_bench
 
 from gymnasium.wrappers import FlattenObservation
 from torch import nn
