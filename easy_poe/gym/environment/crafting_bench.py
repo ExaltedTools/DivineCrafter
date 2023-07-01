@@ -1,8 +1,7 @@
 import gymnasium as gym
 import numpy as np
-
 from gymnasium import spaces
-from gymnasium.spaces import MultiBinary
+from gymnasium.spaces import MultiBinary, Dict
 
 from easy_poe.poe.currency import Currency
 from easy_poe.poe.modifier import Modifier
@@ -15,12 +14,18 @@ class CraftingBenchEnv(gym.Env):
         self.max_modifiers_on_item = max_modifiers_on_item
         self.modifiers_count = len(Modifier)
         self.min_mod_id = 0
-        self.max_mod_id = self.modifiers_count - 1
+        self.max_mod_id = self.modifiers_count
 
         self._current_item = None
         self._target_item = None
 
-        self.observation_space = MultiBinary([2, self.modifiers_count])
+        self.observation_space = Dict(
+                {
+                    "observation": MultiBinary(self.modifiers_count),
+                    "achieved_goal": MultiBinary(self.modifiers_count),
+                    "desired_goal": MultiBinary(self.modifiers_count)
+                }
+            )
         self.action_space = spaces.Discrete(len(Currency))
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -31,39 +36,43 @@ class CraftingBenchEnv(gym.Env):
 
         self._current_item = np.zeros((self.max_modifiers_on_item,), dtype=np.int32)
 
-        self._target_item = self._current_item
-        while np.array_equal(self._current_item, self._target_item):
-            self._target_item = self.np_random.choice(np.arange(self.min_mod_id, self.max_mod_id),
-                                                      size=self.max_modifiers_on_item, replace=False)
+        self._target_item = self.np_random.choice(np.arange(self.min_mod_id, self.max_mod_id + 1),
+                                                  size=self.max_modifiers_on_item,
+                                                  replace=False)
 
-        observation = self._get_obs()
+        obs = self._get_obs()
         info = self._get_info()
 
         if self.render_mode == "ansi":
             self.render()
 
-        return observation, info
+        return obs, info
 
     def step(self, action):
-        action = Currency(action)
-        self._current_item = self._apply_currency(self._current_item, action)
+        action_enum = Currency(action)
+        self._current_item = self._apply_currency(self._current_item, action_enum)
 
-        terminated = np.array_equal(np.sort(self._current_item), np.sort(self._target_item))
-
-        observation = self._get_obs()
+        obs = self._get_obs()
         info = self._get_info()
 
-        reward = 100 if terminated else -action.cost
+        reward = float(self.compute_reward(obs["achieved_goal"], obs["desired_goal"], None).item())
+        terminated = (reward == 0)
 
-        if self.render_mode == "human":
+        if self.render_mode == "ansi":
             self.render()
 
-        return observation, reward, terminated, False, info
+        return obs, reward, terminated, False, info
+
+    def compute_reward(self, achieved_goal, desired_goal, info):
+        distance = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
+        return -(distance > 0).astype(np.float32)
 
     def _get_obs(self):
-        multi_hot_current = self.to_multi_hot(self._current_item)
-        multi_hot_target = self.to_multi_hot(self._target_item)
-        return np.array([multi_hot_current, multi_hot_target], dtype=np.int8)
+        return {
+            "observation": self._item_to_multi_hot(self._current_item),
+            "achieved_goal": self._item_to_multi_hot(self._current_item),
+            "desired_goal": self._item_to_multi_hot(self._target_item)
+        }
 
     def _get_info(self):
         return {
@@ -91,7 +100,7 @@ class CraftingBenchEnv(gym.Env):
                     item[not_empty_mod_index] = 0
 
             case Currency.CHAOS:
-                item = self.np_random.choice(np.arange(self.min_mod_id, self.max_mod_id),
+                item = self.np_random.choice(np.arange(self.min_mod_id, self.max_mod_id + 1),
                                              size=len(item),
                                              replace=False)
 
@@ -107,7 +116,7 @@ class CraftingBenchEnv(gym.Env):
         available_modifiers = np.setdiff1d(Modifier.list(), item)
         return self.np_random.choice(available_modifiers)
 
-    def to_multi_hot(self, item):
+    def _item_to_multi_hot(self, item):
         multi_hot = np.zeros(self.modifiers_count, dtype=np.int8)
         for i in np.nditer(item):
             if i == 0:
@@ -115,14 +124,15 @@ class CraftingBenchEnv(gym.Env):
             multi_hot[i - 1] = 1
         return multi_hot
 
-    def from_multi_hot(self, item):
-        indices = np.where(item != 0)[0] + 1
+    def _item_from_multi_hot(self, multi_hot):
+        indices = np.where(multi_hot != 0)[0] + 1
         pad = self.max_modifiers_on_item - len(indices)
         return np.pad(indices, (pad, 0), 'constant')
 
     def render(self):
-        if self.render_mode == "ansi":
-            return "Current item: {0} \nTarget item: {1}".format(np.sort(self._current_item), np.sort(self._target_item))
+        print("Current item: {0} \nTarget item: {1}".format(np.sort(self._current_item),
+                                                            np.sort(self._target_item)))
+        print()
 
     def close(self):
         pass
