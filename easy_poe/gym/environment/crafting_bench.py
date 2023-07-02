@@ -1,14 +1,14 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from gymnasium.spaces import MultiBinary, Dict
+from gymnasium.spaces import Dict, Box
 
 from easy_poe.poe.currency import Currency
 from easy_poe.poe.modifier import Modifier
 
 
 class CraftingBenchEnv(gym.Env):
-    metadata = {"render_modes": ["ansi"], "render_fps": 4}
+    metadata = {"render_modes": ["console"]}
 
     def __init__(self, render_mode=None, max_modifiers_on_item=6):
         self.max_modifiers_on_item = max_modifiers_on_item
@@ -21,9 +21,9 @@ class CraftingBenchEnv(gym.Env):
 
         self.observation_space = Dict(
                 {
-                    "observation": MultiBinary(self.modifiers_count),
-                    "achieved_goal": MultiBinary(self.modifiers_count),
-                    "desired_goal": MultiBinary(self.modifiers_count)
+                    "observation": Box(0, 1, (self.modifiers_count,), dtype=np.float64),
+                    "achieved_goal": Box(0, 1, (self.modifiers_count,), dtype=np.float64),
+                    "desired_goal": Box(0, 1, (self.modifiers_count,), dtype=np.float64)
                 }
             )
         self.action_space = spaces.Discrete(len(Currency))
@@ -43,9 +43,6 @@ class CraftingBenchEnv(gym.Env):
         obs = self._get_obs()
         info = self._get_info()
 
-        if self.render_mode == "ansi":
-            self.render()
-
         return obs, info
 
     def step(self, action):
@@ -55,11 +52,11 @@ class CraftingBenchEnv(gym.Env):
         obs = self._get_obs()
         info = self._get_info()
 
-        reward = float(self.compute_reward(obs["achieved_goal"], obs["desired_goal"], None).item())
+        if self.action_masks()[action]:
+            reward = float(self.compute_reward(obs["achieved_goal"], obs["desired_goal"], None).item())
+        else:
+            reward = -10
         terminated = (reward == 0)
-
-        if self.render_mode == "ansi":
-            self.render()
 
         return obs, reward, terminated, False, info
 
@@ -80,16 +77,18 @@ class CraftingBenchEnv(gym.Env):
             "target_item": self._target_item
         }
 
-    def get_action_space_mask(self):
-        annul = 1
-        if np.all(self._current_item == 0):
-            annul = 0
+    def action_masks(self):
+        annul = False
+        if np.any(self._current_item != 0):
+            annul = True
 
-        exalt = 1
-        if np.all(self._current_item != 0):
-            exalt = 0
+        exalt = False
+        if np.any(self._current_item == 0):
+            exalt = True
 
-        return np.array([1, annul, exalt], dtype=np.int8)
+        chaos = True
+
+        return np.array([chaos, annul, exalt])
 
     def _apply_currency(self, item, action):
         match action:
@@ -117,7 +116,7 @@ class CraftingBenchEnv(gym.Env):
         return self.np_random.choice(available_modifiers)
 
     def _item_to_multi_hot(self, item):
-        multi_hot = np.zeros(self.modifiers_count, dtype=np.int8)
+        multi_hot = np.zeros(self.modifiers_count)
         for i in np.nditer(item):
             if i == 0:
                 continue

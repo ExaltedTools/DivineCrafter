@@ -1,18 +1,15 @@
 import gymnasium as gym
 from stable_baselines3 import DQN, HerReplayBuffer
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecCheckNan
 
 import easy_poe.gym.environment.crafting_bench
 
 if __name__ == '__main__':
     env = DummyVecEnv([lambda: gym.make("CraftingBench-v0")])
-    env = VecNormalize(env, norm_obs=False, norm_reward=True,
-                           clip_obs=10.)
+    env = VecCheckNan(VecNormalize(env, norm_obs=False, norm_reward=True,
+                                   clip_obs=10.))
 
-    #env = gym.make("CraftingBench-v0")
-
-    goal_selection_strategy = "final"
+    goal_selection_strategy = "future"
 
     # Instantiate the agent
     model = DQN(
@@ -26,8 +23,7 @@ if __name__ == '__main__':
         ),
         verbose=1)
 
-    # Train the agent and display a progress bar
-    model.learn(total_timesteps=int(1_000_000), progress_bar=True)
+    model.learn(total_timesteps=int(2e5), progress_bar=True)
 
-    # Save the agent
     model.save("dqn_poe")
+    env.save("vec_normalize.pkl")
