@@ -3,30 +3,40 @@ import numpy as np
 from gymnasium import spaces
 from gymnasium.spaces import Dict, Box
 
-from easy_poe.poe.currency import Currency
-from easy_poe.poe.modifier import Modifier
+from easy_poe.poe.currency.alchemy import Alchemy
+from easy_poe.poe.currency.alteration import Alteration
+from easy_poe.poe.currency.annul import Annul
+from easy_poe.poe.currency.augmentation import Augmentation
+from easy_poe.poe.currency.chaos import Chaos
+from easy_poe.poe.currency.currency import Currency
+from easy_poe.poe.currency.exalted import Exalted
+from easy_poe.poe.currency.regal import Regal
+from easy_poe.poe.currency.scour import Scour
+from easy_poe.poe.currency.transmute import Transmute
+from easy_poe.poe.item.item import Item, Rarity
+from easy_poe.poe.item.modifier import Modifier
 
 
 class CraftingBenchEnv(gym.Env):
     metadata = {"render_modes": ["console"]}
 
-    def __init__(self, render_mode=None, max_modifiers_on_item=6):
-        self.max_modifiers_on_item = max_modifiers_on_item
+    def __init__(self, render_mode=None):
         self.modifiers_count = len(Modifier)
         self.min_mod_id = 0
         self.max_mod_id = self.modifiers_count
 
-        self._current_item = None
-        self._target_item = None
+        self._current_item: Item = Item(Rarity.NORMAL)
+        self._target_item: Item = Item(Rarity.RARE)
+        self._currency_list = np.array([Transmute, Alteration, Augmentation, Regal, Alchemy, Chaos, Exalted, Scour, Annul])
 
         self.observation_space = Dict(
                 {
-                    "observation": Box(0, 1, (self.modifiers_count,), dtype=np.float64),
-                    "achieved_goal": Box(0, 1, (self.modifiers_count,), dtype=np.float64),
-                    "desired_goal": Box(0, 1, (self.modifiers_count,), dtype=np.float64)
+                    "observation": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64),
+                    "achieved_goal": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64),
+                    "desired_goal": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64)
                 }
             )
-        self.action_space = spaces.Discrete(len(Currency))
+        self.action_space = spaces.Discrete(len(self._currency_list))
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -34,11 +44,9 @@ class CraftingBenchEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self._current_item = np.zeros((self.max_modifiers_on_item,), dtype=np.int32)
-
-        self._target_item = self.np_random.choice(np.arange(self.min_mod_id, self.max_mod_id + 1),
-                                                  size=self.max_modifiers_on_item,
-                                                  replace=False)
+        self._current_item = Item(Rarity.NORMAL)
+        self._target_item = Item(Rarity.RARE)
+        Chaos.apply_to(self._target_item)
 
         obs = self._get_obs()
         info = self._get_info()
@@ -46,23 +54,31 @@ class CraftingBenchEnv(gym.Env):
         return obs, info
 
     def step(self, action):
-        action_enum = Currency(action)
-        self._current_item = self._apply_currency(self._current_item, action_enum)
+        currency: Currency = self._currency_list[action]
+
+        if currency.can_apply_to(self._current_item):
+            currency.apply_to(self._current_item)
 
         obs = self._get_obs()
         info = self._get_info()
 
-        if self.action_masks()[action]:
-            reward = float(self.compute_reward(obs["achieved_goal"], obs["desired_goal"], None).item())
-        else:
-            reward = -10
+        reward = float(self.compute_reward(obs["achieved_goal"], obs["desired_goal"], None).item())
         terminated = (reward == 0)
+        if terminated is 0:
+            print("X")
 
         return obs, reward, terminated, False, info
 
     def compute_reward(self, achieved_goal, desired_goal, info):
         distance = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
         return -(distance > 0).astype(np.float32)
+
+    def action_masks(self):
+        masks = np.empty((len(self._currency_list),), dtype=bool)
+        for idx, x in enumerate(self._currency_list):
+            masks[idx] = x.can_apply_to(self._current_item)
+
+        return masks
 
     def _get_obs(self):
         return {
@@ -77,60 +93,31 @@ class CraftingBenchEnv(gym.Env):
             "target_item": self._target_item
         }
 
-    def action_masks(self):
-        annul = False
-        if np.any(self._current_item != 0):
-            annul = True
-
-        exalt = False
-        if np.any(self._current_item == 0):
-            exalt = True
-
-        chaos = True
-
-        return np.array([chaos, annul, exalt])
-
-    def _apply_currency(self, item, action):
-        match action:
-            case Currency.ANNUL:
-                not_empty_mod_indices = np.where(item != 0)[0]
-                if (len(not_empty_mod_indices)) > 0:
-                    not_empty_mod_index = self.np_random.choice(not_empty_mod_indices)
-                    item[not_empty_mod_index] = 0
-
-            case Currency.CHAOS:
-                item = self.np_random.choice(np.arange(self.min_mod_id, self.max_mod_id + 1),
-                                             size=len(item),
-                                             replace=False)
-
-            case Currency.EXALT:
-                empty_mod_indices = np.where(item == 0)[0]
-                if (len(empty_mod_indices)) > 0:
-                    empty_mod_index = self.np_random.choice(empty_mod_indices)
-                    item[empty_mod_index] = self._get_available_modifiers(item)
-
-        return item
-
-    def _get_available_modifiers(self, item):
-        available_modifiers = np.setdiff1d(Modifier.list(), item)
-        return self.np_random.choice(available_modifiers)
-
     def _item_to_multi_hot(self, item):
-        multi_hot = np.zeros(self.modifiers_count)
-        for i in np.nditer(item):
+        multi_hot_item = np.zeros(self.modifiers_count)
+        for i in np.nditer(item.affixes):
             if i == 0:
                 continue
-            multi_hot[i - 1] = 1
-        return multi_hot
+            multi_hot_item[i - 1] = 1
 
-    def _item_from_multi_hot(self, multi_hot):
-        indices = np.where(multi_hot != 0)[0] + 1
-        pad = self.max_modifiers_on_item - len(indices)
-        return np.pad(indices, (pad, 0), 'constant')
+        multi_hot_rarity = np.zeros(3)
+        if item.rarity is Rarity.NORMAL:
+            multi_hot_rarity[0] = 1
+        elif item.rarity is Rarity.MAGIC:
+            multi_hot_rarity[1] = 1
+        elif item.rarity is Rarity.RARE:
+            multi_hot_rarity[2] = 1
+
+        return np.concatenate((multi_hot_item, multi_hot_rarity))
 
     def render(self):
-        print("Current item: {0} \nTarget item: {1}".format(np.sort(self._current_item),
-                                                            np.sort(self._target_item)))
+
+        print("Current item affixes: {0}".format(np.sort(self._current_item.affixes)))
+        print("Current item rarity: {0}".format(self._current_item.rarity.name))
+
+        print("Target item affixes: {0}".format(np.sort(self._target_item.affixes)))
+        print("Target item rarity: {0}".format(self._target_item.rarity.name))
+
         print()
 
     def close(self):

@@ -1,11 +1,12 @@
 import gymnasium as gym
-import numpy as np
 
-import easy_poe.gym.environment.crafting_bench
-from easy_poe.poe.modifier import Modifier
+from easy_poe.gym.environment import CraftingBenchEnv
 
 if __name__ == '__main__':
-    env = gym.make("CraftingBench-v0")
-    print(env.observation_space.sample())
+    env: CraftingBenchEnv = gym.make("CraftingBench-v0", render_mode="console")
+
     print(env.reset())
-    print(env.step(2))
+    env.render()
+
+    print(env.step(0))
+    env.render()

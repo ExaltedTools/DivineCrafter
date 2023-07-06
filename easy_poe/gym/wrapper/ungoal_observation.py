@@ -9,8 +9,8 @@ class UngoalObservation(ObservationWrapper):
         super().__init__(env)
         self.observation_space = Dict(
                 {
-                    "current_item": Box(0, 1, (self.modifiers_count,), dtype=np.float64),
-                    "target_item": Box(0, 1, (self.modifiers_count,), dtype=np.float64)
+                    "current_item": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64),
+                    "target_item": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64)
                 }
             )
 

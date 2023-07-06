@@ -1,19 +1,19 @@
 import gymnasium as gym
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecCheckNan, VecEnv, VecEnvWrapper, \
-    SubprocVecEnv
+from sb3_contrib import MaskablePPO
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import VecCheckNan, SubprocVecEnv
 from easy_poe.gym.wrapper.ungoal_observation import UngoalObservation
 
 import easy_poe.gym.environment.crafting_bench
 
 if __name__ == '__main__':
-    env = SubprocVecEnv([lambda: UngoalObservation(gym.make("CraftingBench-v0")) for i in range(8)])
-    env = VecCheckNan(VecNormalize(env, norm_obs=False, norm_reward=True,
-                                   clip_obs=10.))
+    env = SubprocVecEnv([lambda: Monitor(UngoalObservation(gym.make("CraftingBench-v0"))) for i in range(8)])
+    env = VecCheckNan(env)
 
-    model = PPO(
+    model = MaskablePPO(
         "MultiInputPolicy",
         env,
+        tensorboard_log="./ppo_tensorboard/",
         batch_size=256,
         n_steps=128,
         n_epochs=1,
@@ -27,7 +27,7 @@ if __name__ == '__main__':
         verbose=1
     )
 
-    model.learn(total_timesteps=int(1_000_000), progress_bar=True)
+    model.learn(total_timesteps=int(200_000), progress_bar=True)
 
     model.save("ppo_poe")
-    env.save("vec_normalize.pkl")
+    #env.save("vec_normalize.pkl")
