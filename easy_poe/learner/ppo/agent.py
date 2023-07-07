@@ -2,6 +2,8 @@ import gymnasium as gym
 from sb3_contrib import MaskablePPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import VecCheckNan, SubprocVecEnv
+from torch import nn
+
 from easy_poe.gym.wrapper.ungoal_observation import UngoalObservation
 
 import easy_poe.gym.environment.crafting_bench
@@ -13,21 +15,21 @@ if __name__ == '__main__':
     model = MaskablePPO(
         "MultiInputPolicy",
         env,
-        tensorboard_log="./ppo_tensorboard/",
-        batch_size=256,
-        n_steps=128,
+        #tensorboard_log="./ppo_tensorboard/",
+        batch_size=16,
+        n_steps=32,
         n_epochs=1,
         gamma=0.9,
-        gae_lambda=0.92,
-        learning_rate=0.056226150263782894,
-        ent_coef=2.4746152292518316e-08,
-        vf_coef=0.3604225938414841,
-        clip_range=0.2,
-        max_grad_norm=0.9,
-        verbose=1
+        gae_lambda=0.98,
+        learning_rate=0.0009693533106957629,
+        ent_coef=0.03711270350288385,
+        vf_coef=0.09166171906430953,
+        clip_range=0.3,
+        max_grad_norm=0.5,
+        verbose=1,
+        policy_kwargs=dict(activation_fn=nn.Tanh)
     )
 
-    model.learn(total_timesteps=int(200_000), progress_bar=True)
+    model.learn(total_timesteps=int(2_000_000), progress_bar=True)
 
     model.save("ppo_poe")
-    #env.save("vec_normalize.pkl")

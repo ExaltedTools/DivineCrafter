@@ -64,8 +64,6 @@ class CraftingBenchEnv(gym.Env):
 
         reward = float(self.compute_reward(obs["achieved_goal"], obs["desired_goal"], None).item())
         terminated = (reward == 0)
-        if terminated is 0:
-            print("X")
 
         return obs, reward, terminated, False, info
 
