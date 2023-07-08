@@ -1,13 +1,14 @@
 import gymnasium as gym
 from stable_baselines3 import DQN, HerReplayBuffer
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecCheckNan
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecCheckNan, SubprocVecEnv
 
 import easy_poe.gym.environment.crafting_bench
 
 if __name__ == '__main__':
-    env = DummyVecEnv([lambda: gym.make("CraftingBench-v0")])
-    env = VecCheckNan(VecNormalize(env, norm_obs=False, norm_reward=True,
-                                   clip_obs=10.))
+    env = SubprocVecEnv([lambda: Monitor(gym.make("CraftingBench-v0")) for i in range(8)])
+    #env = VecNormalize(env, norm_obs=False, norm_reward=True)
+    env = VecCheckNan(env)
 
     goal_selection_strategy = "future"
 
@@ -26,4 +27,4 @@ if __name__ == '__main__':
     model.learn(total_timesteps=int(2e5), progress_bar=True)
 
     model.save("dqn_poe")
-    env.save("vec_normalize.pkl")
+    #env.save("vec_normalize.pkl")
