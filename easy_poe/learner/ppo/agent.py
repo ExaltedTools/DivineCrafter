@@ -4,12 +4,10 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import VecCheckNan, SubprocVecEnv, VecNormalize
 from torch import nn
 
-from easy_poe.gym.wrapper.ungoal_observation import UngoalObservation
-
 import easy_poe.gym.environment.crafting_bench
 
 if __name__ == '__main__':
-    env = SubprocVecEnv([lambda: Monitor(UngoalObservation(gym.make("CraftingBench-v0"))) for i in range(8)])
+    env = SubprocVecEnv([lambda: Monitor(gym.make("CraftingBench-v0")) for i in range(8)])
     #env = VecNormalize(env, norm_obs=False, norm_reward=True)
     env = VecCheckNan(env)
 

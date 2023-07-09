@@ -6,12 +6,11 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 
 import easy_poe.gym.environment.crafting_bench
-from easy_poe.gym.wrapper.ungoal_observation import UngoalObservation
 
 if __name__ == '__main__':
     model_class = TRPO
 
-    env = SubprocVecEnv([lambda: Monitor(UngoalObservation(gym.make("CraftingBench-v0", render_mode="console"))) for i in range(1)])
+    env = SubprocVecEnv([lambda: Monitor(gym.make("CraftingBench-v0", render_mode="console")) for i in range(1)])
     #env = VecNormalize.load("vec_normalize.pkl", env)
 
     env.training = False

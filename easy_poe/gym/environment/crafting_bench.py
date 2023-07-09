@@ -30,12 +30,11 @@ class CraftingBenchEnv(gym.Env):
         self._currency_list = np.array([Transmute, Alteration, Augmentation, Regal, Alchemy, Chaos, Exalted, Scour, Annul])
 
         self.observation_space = Dict(
-                {
-                    "observation": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64),
-                    "achieved_goal": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64),
-                    "desired_goal": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64)
-                }
-            )
+            {
+                "current_item": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64),
+                "target_item": Box(0, 1, (self.modifiers_count + 3,), dtype=np.float64)
+            }
+        )
         self.action_space = spaces.Discrete(len(self._currency_list))
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -80,9 +79,8 @@ class CraftingBenchEnv(gym.Env):
 
     def _get_obs(self):
         return {
-            "observation": self._item_to_multi_hot(self._current_item),
-            "achieved_goal": self._item_to_multi_hot(self._current_item),
-            "desired_goal": self._item_to_multi_hot(self._target_item)
+            "current_item": self._item_to_multi_hot(self._current_item),
+            "target_item": self._item_to_multi_hot(self._target_item)
         }
 
     def _get_info(self):
