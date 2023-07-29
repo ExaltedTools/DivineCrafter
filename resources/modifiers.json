@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "Added Cold",
+    "weight": 1,
+    "affix_type": "prefix"
+  },
+  {
+    "id": 2,
+    "name": "Maximum Life",
+    "weight": 1,
+    "affix_type": "prefix"
+  },
+  {
+    "id": 3,
+    "name": "Added Cold",
+    "weight": 1,
+    "affix_type": "prefix"
+  },
+  {
+    "id": 4,
+    "name": "Maximum Life",
+    "weight": 1,
+    "affix_type": "prefix"
+  },
+  {
+    "id": 5,
+    "name": "Maximum Life",
+    "weight": 1,
+    "affix_type": "prefix"
+  },
+  {
+    "id": 6,
+    "name": "Added Cold",
+    "weight": 1,
+    "affix_type": "suffix"
+  },
+  {
+    "id": 7,
+    "name": "Maximum Life",
+    "weight": 1,
+    "affix_type": "suffix"
+  },
+  {
+    "id": 8,
+    "name": "Added Cold",
+    "weight": 1,
+    "affix_type": "suffix"
+  },
+  {
+    "id": 9,
+    "name": "Maximum Life",
+    "weight": 1,
+    "affix_type": "suffix"
+  },
+  {
+    "id": 10,
+    "name": "Maximum Life",
+    "weight": 1,
+    "affix_type": "suffix"
+  }
+]

@@ -1,16 +1,14 @@
 import numpy as np
 
 from easy_poe.poe.currency.currency import Currency
-from easy_poe.poe.item.item import Rarity, Item
+from easy_poe.poe.item.item import Rarity
 
 
 class Augmentation(Currency):
 
-    _cost = 1
-
     @staticmethod
     def cost():
-        pass
+        return 1 / 23.3
 
     @staticmethod
     def can_apply_to(item):

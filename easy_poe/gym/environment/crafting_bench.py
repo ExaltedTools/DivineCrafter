@@ -3,6 +3,7 @@ import numpy as np
 from gymnasium import spaces
 from gymnasium.spaces import Dict, Box
 
+from easy_poe.poe.context import Context
 from easy_poe.poe.currency.alchemy import Alchemy
 from easy_poe.poe.currency.alteration import Alteration
 from easy_poe.poe.currency.annul import Annul
@@ -14,7 +15,6 @@ from easy_poe.poe.currency.regal import Regal
 from easy_poe.poe.currency.scour import Scour
 from easy_poe.poe.currency.transmute import Transmute
 from easy_poe.poe.item.item import Item, Rarity
-from easy_poe.poe.item.modifier import Modifier
 
 
 class CraftingBenchEnv(gym.Env):
@@ -24,15 +24,16 @@ class CraftingBenchEnv(gym.Env):
         self._current_item: Item = Item(Rarity.NORMAL)
         self._target_item: Item = Item(Rarity.RARE)
 
-        self._currency_list = np.array([Transmute, Alteration, Augmentation, Regal, Alchemy, Chaos, Exalted, Scour, Annul])
+        self._currency_list = np.array(
+            [Transmute, Alteration, Augmentation, Regal, Alchemy, Chaos, Exalted, Scour, Annul])
         self._currency_used = None
 
-        self.modifiers_count = len(Modifier)
+        self.modifiers_count = len(Context.ALL_MODIFIERS)
 
         self.observation_space = Dict(
             {
-                "current_item": Box(0, self.modifiers_count, (Item.MAX_AFFIXES + 1,), dtype=np.float64),
-                "target_item": Box(0, self.modifiers_count, (Item.MAX_AFFIXES + 1,), dtype=np.float64)
+                "current_item": Box(0, 3, (self.modifiers_count + 2,), dtype=np.float64),
+                "target_item": Box(0, 3, (self.modifiers_count + 2,), dtype=np.float64)
             }
         )
         self.action_space = spaces.Discrete(len(self._currency_list))
@@ -47,7 +48,7 @@ class CraftingBenchEnv(gym.Env):
         self._target_item = Item(Rarity.RARE)
         Chaos.apply_to(self._target_item)
 
-        self._currency_used = dict.fromkeys(self._currency_list, 0)
+        self._currency_used = dict(map(lambda v: (v.__name__, 0), self._currency_list))
 
         obs = self._get_obs()
         info = self._get_info()
@@ -60,20 +61,23 @@ class CraftingBenchEnv(gym.Env):
         if currency.can_apply_to(self._current_item):
             currency.apply_to(self._current_item)
 
-        self._currency_used[currency] += 1
+        self._currency_used[currency.__name__] += 1
 
         obs = self._get_obs()
         info = self._get_info()
 
-        reward = float(self.compute_reward(obs["current_item"], obs["target_item"], None))
+        reward = float(self.compute_reward(self._current_item, self._target_item, None))
+
         terminated = (reward == 0)
 
         return obs, reward, terminated, False, info
 
     def compute_reward(self, current_item, target_item, info):
-        ci_set = set(current_item)
-        ti_set = set(target_item)
-        distance = 1.0 - len(ci_set.intersection(ti_set)) / len(ci_set.union(ti_set))
+        ci_set = set(current_item.affixes)
+        ci_set.discard(0)
+        ti_set = set(target_item.affixes)
+        ti_set.discard(0)
+        distance = 1.0 - len(ci_set.intersection(ti_set)) / len(ti_set)
         return -distance
 
     def action_masks(self):
@@ -105,7 +109,13 @@ class CraftingBenchEnv(gym.Env):
         elif item.rarity is Rarity.RARE:
             rarity = 2
 
-        return np.append(item.affixes, rarity).astype(np.float64)
+        rarity_zero = np.zeros(self.modifiers_count + 1)
+        rarity_zero[rarity] = 1
+
+        affixes_zero = np.zeros(self.modifiers_count + 1)
+        affixes_zero[item.affixes] = 1
+
+        return np.append(affixes_zero, rarity).astype(np.float64)
 
     def render(self):
         print("Current item affixes: {0}".format(np.sort(self._current_item.affixes)))

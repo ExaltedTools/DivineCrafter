@@ -5,12 +5,10 @@ from easy_poe.poe.item.item import Item
 
 class Currency(ABC):
 
-    _cost = 1
-
     @staticmethod
     @abstractmethod
     def cost():
-        return Currency._cost
+        pass
 
     @staticmethod
     @abstractmethod

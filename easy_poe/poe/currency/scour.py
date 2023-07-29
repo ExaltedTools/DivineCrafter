@@ -6,11 +6,9 @@ from easy_poe.poe.item.item import Rarity, Item
 
 class Scour(Currency):
 
-    _cost = 1
-
     @staticmethod
     def cost():
-        pass
+        return 1
 
     @staticmethod
     def can_apply_to(item):

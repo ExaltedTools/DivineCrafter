@@ -1,16 +1,15 @@
 import numpy as np
 
+from easy_poe.poe.context import Context
 from easy_poe.poe.currency.currency import Currency
 from easy_poe.poe.item.item import Rarity
-from easy_poe.poe.item.modifier import Modifier
 
 
 class Alteration(Currency):
-    _cost = 1
 
     @staticmethod
     def cost():
-        pass
+        return 1 / 15
 
     @staticmethod
     def can_apply_to(item):
@@ -18,7 +17,7 @@ class Alteration(Currency):
 
     @staticmethod
     def apply_to(item):
-        tmp_affixes = np.random.choice(np.arange(0, len(Modifier) + 1),
+        tmp_affixes = np.random.choice(np.arange(0, len(Context.ALL_MODIFIERS) + 1),
                                        size=Rarity.MAGIC,
                                        replace=False)
         item.affixes = np.pad(tmp_affixes, (0, Rarity.RARE - Rarity.MAGIC), 'constant')

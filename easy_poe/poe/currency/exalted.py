@@ -6,11 +6,9 @@ from easy_poe.poe.item.item import Item, Rarity
 
 class Exalted(Currency):
 
-    _cost = 1
-
     @staticmethod
     def cost():
-        return Currency._cost
+        return 20
 
     @staticmethod
     def can_apply_to(item):

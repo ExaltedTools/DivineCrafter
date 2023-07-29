@@ -6,11 +6,9 @@ from easy_poe.poe.item.item import Rarity
 
 class Annul(Currency):
 
-    _cost = 1
-
     @staticmethod
     def cost():
-        pass
+        return 8.5
 
     @staticmethod
     def can_apply_to(item):

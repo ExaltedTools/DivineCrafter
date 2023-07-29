@@ -1,15 +1,14 @@
 import numpy as np
 
 from easy_poe.poe.currency.currency import Currency
-from easy_poe.poe.item.item import Rarity, Item
+from easy_poe.poe.item.item import Rarity
 
 
 class Regal(Currency):
-    _cost = 1
 
     @staticmethod
     def cost():
-        return Currency._cost
+        return 1 / 2
 
     @staticmethod
     def can_apply_to(item):

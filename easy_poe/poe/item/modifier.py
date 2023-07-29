@@ -1,18 +1,14 @@
-from enum import Enum
+class Modifier:
 
+    def __init__(self, id, name, weight, affix_type):
+        self.id = id
+        self.name = name
+        self.weight = weight
+        self.affix_type = affix_type
 
-class Modifier(Enum):
-    ONE = 1
-    TWO = 2
-    THREE = 3
-    FOUR = 4
-    FIVE = 5
-    SIX = 6
-    SEVEN = 7
-    EIGHT = 8
-    NINE = 9
-    TEN = 10
-
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
+    @staticmethod
+    def from_json(json_dct):
+        return Modifier(json_dct['id'],
+                        json_dct['name'],
+                        json_dct['weight'],
+                        json_dct['affix_type'])

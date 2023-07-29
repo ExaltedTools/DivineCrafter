@@ -3,7 +3,7 @@ from enum import IntEnum
 
 import numpy as np
 
-from easy_poe.poe.item.modifier import Modifier
+from easy_poe.poe.context import Context
 
 
 class Item(ABC):
@@ -56,7 +56,7 @@ class Item(ABC):
         return np.any(self.affixes != 0)
 
     def get_available_modifier(self):
-        available_modifiers = np.setdiff1d(Modifier.list(), self._affixes)
+        available_modifiers = np.setdiff1d(Context.get_all_modifiers_id(), self._affixes)
         return np.random.choice(available_modifiers)
 
 
